@@ -6,7 +6,7 @@ function isCookieExist(name: string) {
 }
 
 interface CookieOptions {
-  expires?: number | Date; // 만료 시간 (초 단위 숫자 또는 Date 객체)
+  expires?: Date | string; // 만료 시간: Date 객체 또는 UTC 형식 문자열
   path?: string; // 쿠키의 유효 경로
   domain?: string; // 쿠키의 유효 도메인
   secure?: boolean; // HTTPS에서만 전송
@@ -20,21 +20,16 @@ function setCookieWithOptions(
   options: CookieOptions = {}
 ) {
   let cookieString = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
-  if (options.expires) {
-    if (typeof options.expires === "number") {
-      const date = new Date();
-      date.setTime(date.getTime() + options.expires * 1000); // 초 단위로 설정
-      cookieString += `; expires=${date.toUTCString()}`;
-    } else if (options.expires instanceof Date) {
-      cookieString += `; expires=${options.expires.toUTCString()}`;
-    }
+  if (options.expires instanceof Date) {
+    options.expires = options.expires.toUTCString();
   }
+  for (let optionKey in options) {
+    let optionValue = options[optionKey];
+    if (!optionValue) continue;
 
-  cookieString += `; path=${options.path || "/"}`;
-  if (options.domain) cookieString += `; domain=${options.domain}`;
-  if (options.secure) cookieString += `; secure`;
-  if (options.sameSite) cookieString += `; samesite=${options.sameSite}`;
-
+    cookieString += `; ${optionKey}`;
+    cookieString += optionValue !== true && `= ${optionValue}`;
+  }
   document.cookie = cookieString;
 }
 
@@ -53,7 +48,7 @@ function getCookieValue(name: string) {
 
 // ------ 테스트
 setCookieWithOptions("language", "korea", {
-  expires: 7 * 24 * 60 * 60, // 초 단위 (7일)
+  expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1일 후
   path: "/",
   secure: true,
   sameSite: "Strict",
